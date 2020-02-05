@@ -57,6 +57,9 @@ export PGPOOL_ADMIN_USERNAME="${PGPOOL_ADMIN_USERNAME:-}"
 export PGPOOL_ENABLE_LDAP="${PGPOOL_ENABLE_LDAP:-no}"
 export PGPOOL_TIMEOUT="360"
 export PGPOOL_ENABLE_LOAD_BALANCING="${PGPOOL_ENABLE_LOAD_BALANCING:-yes}"
+export PGPOOL_CLIENT_IDLE_LIMIT=${PGPOOL_CLIENT_IDLE_LIMIT:-0}
+export PGPOOL_CHILD_LIFE_TIME=${PGPOOL_CHILD_LIFE_TIME:-300}
+export PGPOOL_CONNECTION_LIFE_TIME=${PGPOOL_CHILD_LIFE_TIME:-0}
 
 # LDAP
 export PGPOOL_LDAP_URI="${PGPOOL_LDAP_URI:-}"
@@ -267,6 +270,12 @@ pgpool_create_config() {
         load_balance_mode="off"
     fi
 
+    # connection life time may not be bigger than child life time
+    if "$PGPOOL_CONNECTION_LIFE_TIME" -gt "$PGPOOL_CHILD_LIFE_TIME"; then
+        info "configuring PGPOOL_CONNECTION_LIFE_TIME equal to PGPOOL_CHILD_LIFE_TIME definition..."
+        PGPOOL_CONNECTION_LIFE_TIME=$PGPOOL_CHILD_LIFE_TIME
+    fi
+
     info "Generating pgpool.conf file..."
     # Configuring Pgpool-II to use the streaming replication mode since it's the recommended way
     # ref: http://www.pgpool.net/docs/latest/en/html/configuring-pgpool.html
@@ -277,6 +286,11 @@ pgpool_create_config() {
     pgpool_set_property "listen_addresses" "*"
     pgpool_set_property "port" "$PGPOOL_PORT_NUMBER"
     pgpool_set_property "socket_dir" "$PGPOOL_TMP_DIR"
+
+    pgpool_set_property "client_idle_limit" "$PGPOOL_CLIENT_IDLE_LIMIT"
+    pgpool_set_property "child_life_time" "$PGPOOL_CHILD_LIFE_TIME"
+    pgpool_set_property "connection_life_time" "$PGPOOL_CONNECTION_LIFE_TIME"
+
     # Communication Manager Connection settings
     pgpool_set_property "pcp_socket_dir" "$PGPOOL_TMP_DIR"
     # Authentication settings
